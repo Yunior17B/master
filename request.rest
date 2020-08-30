@@ -18,3 +18,11 @@ Content-Type: application/json
     "name": "Test",
     "password":"test"
 }
+
+###
+DELETE http://localhost:3000/projects/2
+
+Content-Type: application/json
+{
+    "userId":2
+}

@@ -2,8 +2,11 @@ const User = require('../models/UserModel');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
  
+
 async function hashPassword(password) {
- return await bcrypt.hash(password, 10);
+  
+  console.log(password)
+ return await bcrypt.hashSync(password, bcrypt.genSaltSync(10));
 }
  
 async function validatePassword(plainPassword, hashedPassword) {
@@ -15,6 +18,7 @@ exports.signup = async (req, res, next) => {
   const { email, password, role } = req.body
   const hashedPassword = await hashPassword(password);
   const newUser = new User({ email, password: hashedPassword, role: role || "basic" });
+  console.log(newUser)
   const accessToken = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, {
    expiresIn: "1d"
   });
@@ -24,6 +28,7 @@ exports.signup = async (req, res, next) => {
    data: newUser,
    accessToken
   })
+  console.log("user created", newUser)
  } catch (error) {
   next(error)
  }
