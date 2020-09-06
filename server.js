@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express')
 const articleRouter = require("./routes/articles")
 const mongoose = require('mongoose')
@@ -7,9 +9,9 @@ const app = express('express')
 const bodyParser = require('body-parser');
 const path = require('path')
 const jwt = require('jsonwebtoken');
-const {ROLE,users, User} = require('./models/UserModel')
-const {routes, projectRouter} = require('./routes/Route.js');
-const { authUser, authRole } = require('./basicAuth')
+// const {ROLE,users, User} = require('./models/UserModel')
+// const {routes, projectRouter} = require('./routes/Route.js');
+// const { authUser, authRole } = require('./basicAuth')
 
 
 mongoose.connect('mongodb://localhost/inz',{
@@ -38,49 +40,33 @@ app.use('/articles', articleRouter)
  */
 app.use(express.json())
 
-require("dotenv").config({
-    path: path.join(__dirname, ".env")
-   });
-    
-   app.use(bodyParser.urlencoded({ extended: true }));
-    
-   app.use(async (req, res, next) => {
-    if (req.headers["x-access-token"]) {
-     const accessToken = req.headers["x-access-token"];
-     const { userId, exp } = await jwt.verify(accessToken, process.env.JWT_SECRET);
-     // Check if token has expired
-     if (exp < Date.now().valueOf() / 1000) { 
-      return res.status(401).json({ error: "JWT token has expired, please login to obtain a new one" });
-     } 
-     res.locals.loggedInUser = await User.findById(userId); next(); 
-    } else { 
-     next(); 
-    } 
-   });
-    
-//    app.use('/', routes); app.listen(5000), () => {
-//      console.log('Server is listening on Port:', app.listen(5000))
-//    }
-//    app.use(async (req, res, next) => {
-//     if (req.headers["x-access-token"]) {
-//      const accessToken = req.headers["x-access-token"];
-//      const { userId, exp } = await jwt.verify(accessToken, process.env.JWT_SECRET);
-//       // Check if token has expired
-//      if (exp < Date.now().valueOf() / 1000) {
-//       return res.status(401).json({
-//        error: "JWT token has expired, please login to obtain a new one"
-//       });
-//      }
-//      res.locals.loggedInUser = await User.findById(userId);
-//      next();
-//     } else {
-//      next();
-//     }
-//   });
+app.get('/posts', authenticateToken, (req, res)=> {
+  res.jason(posts.filter(post => post.username === req.user.name))
+})
 
-app.get('/', (req, res) => {
+app.post('/', (req, res) => {
     res.send('Home Page')
+    const username = req.body.username
+    const user = {
+      name: username
+    }
+   const accessToken= jwt.sign(user, process.env.ACCESS_TOKEN_SECRET)
+    res.json({accessToken: accessToken})
+    res.render("templates/login")
   })
+  function authenticateToken(req, res, next){
+    
+    const authHeader = req.headers['authorization']
+    const token = authHeader && authHeader.split(' ')[1]
+    if(token == null) return res.sendStatus(401)
+
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user)=>{
+      if(err) return res.sendSatus(403)
+      req.user = user
+      next()
+    })
+  }
+
   app.use(express.json())
   app.use(setUser)
   app.get('/dashboard', authUser, (req, res) => {
@@ -89,6 +75,7 @@ app.get('/', (req, res) => {
   app.get('/admin', authUser, authRole(ROLE.ADMIN), (req, res) => {
     res.send('Admin Page')
   })
+
   
   function setUser(req, res, next) {
     const userId = req.body.userId
