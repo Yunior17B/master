@@ -9,17 +9,18 @@ const app = express('express')
 const bodyParser = require('body-parser');
 const path = require('path')
 const jwt = require('jsonwebtoken');
-// const {ROLE,users, User} = require('./models/UserModel')
-// const {routes, projectRouter} = require('./routes/Route.js');
-// const { authUser, authRole } = require('./basicAuth')
+const {ROLE,users, User} = require('./models/UserModel')
+const {routes, projectRouter} = require('./routes/Route.js');
+const { authUser, authRole } = require('./basicAuth')
 
-
+mongoose.Promise = global.Promise;
 mongoose.connect('mongodb://localhost/inz',{
      useUnifiedTopology: true, useNewUrlParser: true, useCreateIndex: true })
 
 
 app.set('view engine', 'ejs')
-
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.urlencoded({
     extended: false
 }))
@@ -44,16 +45,30 @@ app.get('/posts', authenticateToken, (req, res)=> {
   res.jason(posts.filter(post => post.username === req.user.name))
 })
 
-app.post('/', (req, res) => {
+app.post('/login.html', (req, res) => {
     res.send('Home Page')
-    const username = req.body.username
+    const username = req.body.email
     const user = {
       name: username
     }
    const accessToken= jwt.sign(user, process.env.ACCESS_TOKEN_SECRET)
     res.json({accessToken: accessToken})
-    res.render("templates/login")
+    })
+  app.get('/', (req, res)=>{
+    res.render("login")
+    
   })
+  //trzeba to przekminic
+  app.get("/addname", (req, res) => {
+    var myData = new user(req.body);
+    myData.save()
+      .then(item => {
+        res.send("item saved to database");
+      })
+      .catch(err => {
+        res.status(400).send("unable to save to database");
+      });
+  });
   function authenticateToken(req, res, next){
     
     const authHeader = req.headers['authorization']
@@ -69,12 +84,12 @@ app.post('/', (req, res) => {
 
   app.use(express.json())
   app.use(setUser)
-  app.get('/dashboard', authUser, (req, res) => {
-    res.send('Dashboard Page')
-  })
-  app.get('/admin', authUser, authRole(ROLE.ADMIN), (req, res) => {
-    res.send('Admin Page')
-  })
+  // app.get('/dashboard', authUser, (req, res) => {
+  //   res.send('Dashboard Page')
+  // })
+  // app.get('/admin', authUser, authRole(ROLE.ADMIN), (req, res) => {
+  //   res.send('Admin Page')
+  // })
 
   
   function setUser(req, res, next) {

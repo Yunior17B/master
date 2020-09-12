@@ -22,8 +22,11 @@
     "marked": "^1.1.1",
     "method-override": "^3.0.0",
     "mongoose": "^5.9.25",
+    "morgan": "^1.10.0",
     "path": "^0.12.7",
-    "slugify": "^1.4.5"
+    "request": "^2.88.2",
+    "slugify": "^1.4.5",
+    "socket.io": "^2.3.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.4"
