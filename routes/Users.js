@@ -1,93 +1,141 @@
-const express = require('express')
-const Usersi = express.Router()
-const cors = require('cors')
-const jwt = require('jsonwebtoken')
-const bcrypt = require('bcrypt')
+const express = require('express');
+const router = express.Router();
+const bcrypt = require('bcryptjs');
+const passport = require('passport');
+const LocalStrategy = require('passport-local').Strategy;
+// Load User model
+const User = require('../models/UserModel').User;
+const { forwardAuthenticated } = require('../config/auth');
+const { authenticate } = require('passport');
+const { Router } = require('express');
 
-const User = require('../models/UserModel')
 
+// Login Page
+router.get('/login', forwardAuthenticated, (req, res) => res.render('login.ejs'));
 
-Usersi.use(cors());
-process.env.SECRET_KEY= 'secret';
+// Register Page
+router.get('/register', forwardAuthenticated, (req, res) => res.render('register'));
 
-Usersi.post('/register', (req, res) => {
-    const today = new Data();
-    const userData = {
-      email: req.body.email,
-      password: req.body.password,
-     create: today 
-     }
-     User.findOne({
-       email: req.body.email
-     })
-     .then(user => {
-       if(!user){
-         bcrypt.hash(req.body.password, 10, (err, hash)=> {
-           userData.password = hash
-           User.create(userData)
-           .then(user =>{
-             res.json({
-               status: user.email + 'Registered!'
-             })
-             .catch(err =>{
-               res.send('error: ' + err)
-             })
-           })
-         })
-       } else {
-           res.json({
-               error: 'User already exists'
-           })
-       }
-     })
-     .catch(err => {
-         res.send('error: ' + err)
-     })
-  })
-Usersi.post('/login', (req, res) => {
-    User.findOne({
-        email: req.body.email
-    })
-    .then(user => {
-        if(user){
-        if(bcrypt.compareSync(req.body.password, user.password)){
-            const payload = {
-                _id:user._id,
-                email: user.email
-            }
-            let token = jwt.sign(payload.env.SECRET_KEY, {
-                expiresIn: 1440
-            })
-            res.send(token)
-        } else{
-            //Password don't match
-            res.json({error: 'User does not exist'})
-        }
-    } else{
-        res.json({ error: 'User deas not exost'})
-    }
-    })
-    .catch(err =>{
-        res.send('error: '+ err)
-    })
-})
+// Register
+router.post('/register', (req, res) => {
+  const { name, email, password, password2 } = req.body;
+  let errors = [];
 
-Usersi.get('/profile', (req, res)=> {
-    var decoded = jwt.verify(req.header['authorization'], process.env.SECRET_KEY)
+  if (!name || !email || !password || !password2) {
+    errors.push({ msg: 'Please enter all fields' });
+  }
+  if (password != password2) {
+    errors.push({ msg: 'Passwords do not match' });
+  }
 
-    User.findOne({
-        _id:decoded._id
-    })
-    .then(user => {
-        if(user){
-            res.json(user)
-        } else {
-            res.send('User deas not exist')
-        }
-    })
-    .catch(err =>{
-        res.send('error: ' + err)
-    })
-})
+  if (password.length < 6) {
+    errors.push({ msg: 'Password must be at least 6 characters' });
+  }
 
-module.exports = Usersi
+    // =========================================================================
+  // passport session setup ==================================================
+  // =========================================================================
+  // required for persistent login sessions
+  // passport needs ability to serialize and unserialize users out of session
+
+  // used to serialize the user for the session
+  
+
+  passport.serializeUser(function(user, done) {
+      done(null, user.id);
+  });
+
+  // used to deserialize the user
+  passport.deserializeUser(function(id, done) {
+      User.findById(id, function(err, user) {
+          done(err, user);
+      });
+  });
+
+  if (errors.length > 0) {
+    res.render('register', {
+      errors,
+      name,
+      email,
+      password,
+      password2,
+      role
+    });
+  } else {  
+    User.findOne({ email: email }).exec().then(user => {
+      if (user) {
+        errors.push({ msg: 'Email already exists' });
+        res.render('register', {
+          errors,
+          name,
+          email,
+          password,
+          password2,
+          role
+        });
+        if (!user.verifyPassword(password)) { return done(null, false); }
+        return done(null, user);
+      } else {
+        const newUser = new User({
+          name,
+          email,
+          password
+        });
+        bcrypt.genSalt(10, (err, salt) => {
+          bcrypt.hash(newUser.password, salt, (err, hash) => {
+            if (err) throw err;
+            newUser.password = hash;
+            console.log(hash);
+            newUser
+              .save()
+              .then(user => {
+                req.flash(
+                  'success_msg',
+                  'You are now registered and can log in'
+                );
+                res.redirect('/users/login');
+              })
+              .catch(err => console.log(err));
+          });
+        });
+      }
+    });
+  }
+});
+
+//Local Strategy use to authorizated user in services 
+passport.use(new LocalStrategy({
+  emailField: 'email',    
+  passwordField: 'password'
+},
+  function(email, password, done) {
+    User.findOne({ email: email }, function (err, user) {
+      if (err) { return done(err); }
+      if (!user) {
+        return done(null, false, { message: 'Incorrect username.' });
+      }
+      if (!user.validPassword(password)) {
+        return done(null, false, { message: 'Incorrect password.' });
+      }
+      return done(null, user);
+    });
+  }
+));
+// Login
+
+router.post('/login', 
+passport.authenticate('local', { failureRedirect: '/',
+successRedirect: '/users/login' }),
+
+function(req, res) {
+  res.redirect('/users/login');
+});
+
+// Logout
+router.get('/logout', (req, res) => {
+  req.logout();
+  req.flash('success_msg', 'You are logged out');
+  res.redirect('/users/login');
+});
+
+module.exports = router;

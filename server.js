@@ -1,42 +1,50 @@
-require('dotenv').config();
 
 const express = require('express')
+
 const articleRouter = require("./routes/articles")
 const mongoose = require('mongoose')
 const Article = require ('./models/article')
-const methodOverride = require('method-override')
-const app = express('express')
+const methodOverride = require('method-override');
+const socket = require("socket.io");
+const app = express()
 const bodyParser = require('body-parser');
+const expressLayouts = require('express-ejs-layouts');
 const cors = require('cors');
-const jwt = require('jsonwebtoken');
 const port = process.env.PORT || 3000
+const chat = require('./routes/Chat.js');
+const passport = require('passport');
+const flash = require('express-flash');
+const session = require('express-session');
+
 
 
 
 mongoose.Promise = global.Promise;
 mongoose.connect('mongodb://localhost/inz',{
      useUnifiedTopology: true, useNewUrlParser: true, useCreateIndex: true })
-     .then(()=> console.log('MongoDb Connccted'))
+     .then(()=> console.log('MongoDb Connected'))
      .catch(err => console.log(err))
 
-const Users = require('./routes/Users')
 
-app.use('/users', Users)
-
-
-
+app.use(expressLayouts);
 app.set('view engine', 'ejs')
 app.use(bodyParser.json());
 app.use(cors())
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.urlencoded({
     extended: false
 }))
 app.use(methodOverride('_method'))
+app.use(flash())
+app.use(session({
+  secret: 'sercret',
+  resave: false,
+  saveUninitialized: false
+}))
+app.use(passport.initialize());
+app.use(passport.session());
 
-
-
-app.get('/Art', async(req, res) => {
+app.get('/', async(req, res) => {
     const articles = await Article.find().sort({
         createdAt: 'desc'
     })
@@ -49,25 +57,48 @@ app.use('/articles', articleRouter)
  */
 app.use(express.json())
 
-app.get('/posts', authenticateToken, (req, res)=> {
-  res.jason(posts.filter(post => post.username === req.user.name))
-})
+app.use(function(req, res, next) {
+  res.locals.success_msg = req.flash('success_msg');
+  res.locals.error_msg = req.flash('error_msg');
+  res.locals.error = req.flash('error');
+  next();
+});
 
-  function authenticateToken(req, res, next){
-    
-    const authHeader = req.headers['authorization']
-    const token = authHeader && authHeader.split(' ')[1]
-    if(token == null) return res.sendStatus(401)
+app.use('/login', require('./routes/index.js'));
+app.use('/users', require('./routes/Users.js'));
+app.set('/chat', chat);
 
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user)=>{
-      if(err) return res.sendSatus(403)
-      req.user = user
-      next()
-    })
-  }
 
-app.listen(port, function(){
+const server = app.listen(port, function(){
   console.log('Server is running on port: ' + port)
+  console.log(`http://localhost:${port}/login`);
 })
-  
- 
+app.get('/chat', function(req, res) {
+  res.render('chat/chat.ejs');
+
+});
+////// Socket Setup
+
+const io = socket(server);
+io.on("connection", function (socket) {
+  //console.log("Made socket connection");
+});
+io.sockets.on('connection', function (socket) {
+
+ // console.log("Socket connected.");
+    
+  socket.on('message', function(msg){
+    io.emit('message', msg);
+  });
+});
+
+io.on('connection', (socket)=>{
+  console.log("a user connected via socket!")
+  socket.on('disconnect', ()=>{
+      console.log("a user disconnected!")
+  })
+  socket.on('chat message', (msg)=>{
+      console.log("Message: "+msg)
+      io.emit('chat message', msg)
+  })
+})
