@@ -1,10 +1,10 @@
 
 const express = require('express')
-
 const articleRouter = require("./routes/articles")
 const mongoose = require('mongoose')
 const Article = require ('./models/article')
 const methodOverride = require('method-override');
+const Username = require('./models/UserModel').User;
 const socket = require("socket.io");
 const app = express()
 const bodyParser = require('body-parser');
@@ -16,20 +16,20 @@ const passport = require('passport');
 const flash = require('express-flash');
 const session = require('express-session');
 
-
-
-
 mongoose.Promise = global.Promise;
 mongoose.connect('mongodb://localhost/inz',{
-     useUnifiedTopology: true, useNewUrlParser: true, useCreateIndex: true })
+     useUnifiedTopology: true, 
+     useNewUrlParser: true, 
+     useCreateIndex: true })
      .then(()=> console.log('MongoDb Connected'))
      .catch(err => console.log(err))
 
-
 app.use(expressLayouts);
 app.set('view engine', 'ejs')
+app.use(express.static('public'))
 app.use(bodyParser.json());
-app.use(cors())
+app.use(cors());
+
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.urlencoded({
     extended: false
@@ -43,12 +43,19 @@ app.use(session({
 }))
 app.use(passport.initialize());
 app.use(passport.session());
-
+///Articles
 app.get('/', async(req, res) => {
     const articles = await Article.find().sort({
         createdAt: 'desc'
     })
     res.render("articles/index", { articles: articles })
+});
+
+app.get('/client', async(req, res) => {
+  const articles = await Article.find().sort({
+      createdAt: 'desc'
+  })
+  res.render("articles/client", { articles: articles })
 });
 
 app.use('/articles', articleRouter)
@@ -73,10 +80,16 @@ const server = app.listen(port, function(){
   console.log('Server is running on port: ' + port)
   console.log(`http://localhost:${port}/login`);
 })
-app.get('/chat', function(req, res) {
-  res.render('chat/chat.ejs');
 
+app.get('/chatClient', function(req, res) {
+  res.render('chat/chatClient.ejs');
 });
+// const rooms = { }
+// console.log(rooms)
+app.get('/chat', function(req, res) {
+    res.render('chat/chat.ejs');
+});
+
 ////// Socket Setup
 
 const io = socket(server);

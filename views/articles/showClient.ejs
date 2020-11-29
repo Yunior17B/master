@@ -10,14 +10,13 @@
 <body>
     <div class="container">
       <h1 class="mb-1"><%= article.title %></h1>
-    <div class="text-muted mb-2">
-        <%= article.createdAt.toLocaleDateString() %>
-    </div>
-       
+    <div class="text-muted mb-2"><%= article.createdAt.toLocaleDateString() %></div>
+        <a href="/client" class=' btn btn-secondary'>All articles</a>
+        
         <div>
             <%- article.description %>
         </div>
-            <hr>
+        <hr>
         <div>
             <%- article.markdown %>
         </div>

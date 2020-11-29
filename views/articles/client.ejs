@@ -6,20 +6,16 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <style>
-        .mb-4{
-            text-align: center;
-        }
         .menu{
             text-align: center;
         }
     </style>
-    </head>
+</head>
 <body>
     <div class="container">
+        <div class="menu">
         <h1 class="mb-4">Application</h1>
-        <div class='menu'>
-        <a href ="/articles/new" class="btn btn-success">New application</a>
-        <a href="/chat" class="btn btn-primary">Chat</a>
+        <a href="/chatClient" class="btn btn-primary">Chat</a>
         <a href="/users/logout" class="btn btn-secondary">Logout</a>
     </div>
         <% articles.forEach( article => { %>
@@ -30,10 +26,8 @@
                         <%= article.createdAt %>
                     </div>
                     <div class="card-text mb-2"><%= article.description %></div>
-                    <a href="articles/<%= article.slug %>" class="btn btn-primary">Read More</a>
-                    <a href="articles/edit/<%= article.id %>" class="btn btn-info">Edit</a>
-                    <form action="/articles/<%= article.id %>?_method=DELETE" method="POST" class="d-inline">
-                    <button type="submit" class="btn btn-danger">DELETE</button>
+                    <a href="articles/<%= article.slug %>" class="btn btn-primary">Read More</a>                 
+                    
                     </form>
                 </div>
               </div>

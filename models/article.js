@@ -5,7 +5,7 @@ const createDomPurify = require('dompurify')
 const { JSDOM } = require('jsdom')
 const dompurify = createDomPurify(new JSDOM().window)
 
-const articleSchema= new mangoose.Schema({
+const articleSchema = new mangoose.Schema({
     title:{
         type: String,
         required: true

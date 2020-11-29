@@ -1,17 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
-const passport = require('passport');
-const LocalStrategy = require('passport-local').Strategy;
+var passport = require('passport')
+  , LocalStrategy = require('passport-local').Strategy;
 // Load User model
 const User = require('../models/UserModel').User;
 const { forwardAuthenticated } = require('../config/auth');
-const { authenticate } = require('passport');
-const { Router } = require('express');
+const db = require('./db');
 
 
 // Login Page
 router.get('/login', forwardAuthenticated, (req, res) => res.render('login.ejs'));
+router.get('/login/client', forwardAuthenticated, (req, res) => res.render('LoginClient.ejs'));
 
 // Register Page
 router.get('/register', forwardAuthenticated, (req, res) => res.render('register'));
@@ -77,7 +77,6 @@ router.post('/register', (req, res) => {
         return done(null, user);
       } else {
         const newUser = new User({
-          name,
           email,
           password
         });
@@ -105,30 +104,56 @@ router.post('/register', (req, res) => {
 
 //Local Strategy use to authorizated user in services 
 passport.use(new LocalStrategy({
-  emailField: 'email',    
+  usernameField: 'email',    
   passwordField: 'password'
 },
   function(email, password, done) {
-    User.findOne({ email: email }, function (err, user) {
-      if (err) { return done(err); }
-      if (!user) {
-        return done(null, false, { message: 'Incorrect username.' });
-      }
-      if (!user.validPassword(password)) {
-        return done(null, false, { message: 'Incorrect password.' });
-      }
-      return done(null, user);
-    });
-  }
-));
+    console.log('local strategy called with: %s', email);
+    // User.find(email, function (err, user){
+    //   if (err) {
+    //     return done(err);
+    // }
+    // if (!user) {
+    //     return done(null, false, { message: "Incorrect username." });
+    // }
+    // if (password !== user.password) {
+    //     return done(null, false, { message: "Incorrect password." })
+    // }
+
+
+    // })
+       // if(!user.verifyPassword(password)){
+    //   return done(null, false, { message: 'Incorrect password.' });
+    // } 
+    return done(null, {username: email, password: password});
+  }));
+
 // Login
+router.post('/login',  function(req, res, next ){
+  passport.authenticate('local', function(err, user, info) {
+    if (err) { return next(err) }
+    if (!user) { return res.json( { message: info.message }) }
+    res.redirect('/');
+    req.flash('success_msg', 'You are log in'+ user);
+  },
+  {
+  failureRedirect: '/users/login',
+  successRedirect: '/',
+  failureFlash: true
+})
+  (req, res, next);   
+});
 
-router.post('/login', 
-passport.authenticate('local', { failureRedirect: '/',
-successRedirect: '/users/login' }),
-
-function(req, res) {
-  res.redirect('/users/login');
+router.post('/login/client', function(req, res, next ){
+  passport.authenticate('local', function(err, user, info) {
+    if (err) { return next(err) }
+    if (!user) { return res.json( { message: info.message }) }
+    res.redirect('/client');
+  },
+  {failureRedirect: '/users/login',
+  successRedirect: '/client',
+  failureFlash: true})
+  (req, res, next);   
 });
 
 // Logout
