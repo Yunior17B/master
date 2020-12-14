@@ -21,6 +21,16 @@ const articleSchema = new mangoose.Schema({
         type: Date,
         default: () => Date.now()
     },
+    status:{
+        type: String,
+        required: true
+    },    
+    dateofreturn:{
+        type: Date,
+        min: () => Date.now(),
+        max: '5000-01-01',
+        required: true
+    },
     slug: {
         type: String,
         required: true,

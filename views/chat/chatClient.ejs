@@ -7,6 +7,11 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
     <title>Chat</title>
     <style>
+        .List{
+            font-size: 14px;
+            text-align: left;
+            margin-left: -350px;
+        }
         #messages{height:300px;}
     </style>
 </head>
@@ -18,6 +23,15 @@
                     Chat 
                     <button id="clear" class="btn btn-danger">Clear</button>
                     <a href="/client" class="btn btn-outline-success">Back to articles </a>
+                    <div class="List">
+                        User List
+                        <% users.forEach(User => {%>
+                            <div class="Users">
+                        </br><a href="/chat/<%= User.email %>" class="alert"><%= User.email %></a>
+                    </div>
+                       <% }) %>
+                    </div>
+                    
                 </h1>
                 <div id="status"></div>
                 <div id="chat">
@@ -109,7 +123,7 @@
                         event.preventDefault();
                     }
                 })
-
+               
                 // Handle Chat Clear
                 clearBtn.addEventListener('click', function(){
                     socket.emit('clear');

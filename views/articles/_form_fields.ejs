@@ -1,6 +1,10 @@
 <div class="form-group">
     <label for="title">Title</label>
     <input required value="<%= article.title %>" type="text" name="title" id="title" class="form-control">
+    <label for="status">Status</label>
+    <input required value="<%= article.status %>" type="text" name="status" id="status" class="form-control">
+    <label for="status">Date of return</label>
+    <input required value="<%= article.dateofreturn %>" type="date" name="dateofreturn" id="dateofreturn" class="form-control">
 </div>
 <div class="form-group">
     <label for="description">Description</label>
@@ -14,3 +18,4 @@
 
 <a href="/" class="btn btn-secondary">Cancel</a>
 <button type="submit" class="btn btn-primary">Save</button>
+<a href="/" class="btn btn-outline-success">Back to articles </a>

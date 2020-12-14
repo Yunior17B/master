@@ -6,7 +6,7 @@ var passport = require('passport')
 // Load User model
 const User = require('../models/UserModel').User;
 const { forwardAuthenticated } = require('../config/auth');
-const db = require('./db');
+
 
 
 // Login Page
@@ -40,15 +40,15 @@ router.post('/register', (req, res) => {
 
   // used to serialize the user for the session
   
-
+  passport.use(new LocalStrategy(User.authenticate()));
   passport.serializeUser(function(user, done) {
-      done(null, user.id);
+      done(null, user);
   });
 
   // used to deserialize the user
-  passport.deserializeUser(function(id, done) {
-      User.findById(id, function(err, user) {
-          done(err, user);
+  passport.deserializeUser(function(user, done) {
+      User.findOne(id, function(err, user) {
+          done(null, user);
       });
   });
 
@@ -103,36 +103,28 @@ router.post('/register', (req, res) => {
 });
 
 //Local Strategy use to authorizated user in services 
-passport.use(new LocalStrategy({
-  usernameField: 'email',    
-  passwordField: 'password'
+passport.use('login',new LocalStrategy({
+  emailField: 'email',
+  passwordField: 'password',
+  passReqToCallback: true
 },
-  function(email, password, done) {
-    console.log('local strategy called with: %s', email);
-    // User.find(email, function (err, user){
-    //   if (err) {
-    //     return done(err);
-    // }
-    // if (!user) {
-    //     return done(null, false, { message: "Incorrect username." });
-    // }
-    // if (password !== user.password) {
-    //     return done(null, false, { message: "Incorrect password." })
-    // }
-
-
-    // })
-       // if(!user.verifyPassword(password)){
-    //   return done(null, false, { message: 'Incorrect password.' });
-    // } 
-    return done(null, {username: email, password: password});
-  }));
-
+  function(req,email, password, done) {
+      User.findOne({ 'email': email }, function(err, user) {
+      if (err) { return done(err); }
+      if (!user) {
+          return done(null, false, req.flash('loginMessage','Incorrect username.' ));
+      }
+      if (user.password != password ) {
+          return done(null, false,  req.flash('loginMessage','Incorrect password !' ));
+      }
+      return done(null, user);
+      });
+  }
+));
+   
 // Login
 router.post('/login',  function(req, res, next ){
-  passport.authenticate('local', function(err, user, info) {
-    if (err) { return next(err) }
-    if (!user) { return res.json( { message: info.message }) }
+  passport.authenticate('login', function(err, user, info) {
     res.redirect('/');
     req.flash('success_msg', 'You are log in'+ user);
   },
@@ -145,14 +137,15 @@ router.post('/login',  function(req, res, next ){
 });
 
 router.post('/login/client', function(req, res, next ){
-  passport.authenticate('local', function(err, user, info) {
-    if (err) { return next(err) }
-    if (!user) { return res.json( { message: info.message }) }
+  passport.authenticate('login', function(err, user, info) {
     res.redirect('/client');
+    req.flash('success_msg', 'You are log in'+ user);
   },
-  {failureRedirect: '/users/login',
+  {
+  failureRedirect: '/users/login',
   successRedirect: '/client',
-  failureFlash: true})
+  failureFlash: true
+})
   (req, res, next);   
 });
 

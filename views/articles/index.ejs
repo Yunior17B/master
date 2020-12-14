@@ -25,10 +25,9 @@
         <% articles.forEach( article => { %>
             <div class=" card mt-4">
                 <div class="card-body">
-                    <h4 class="card-title"><%= article.title %></h4>
-                    <div class="card-subtitle text-muted mb-2">
-                        <%= article.createdAt %>
-                    </div>
+                    <h4 class="card-title"><%= article.title %></h4><h6 class="status"><%= article.status %></h6>
+                    <div class="card-subtitle text-muted mb-2"><h8>Filing date: <%= article.createdAt %> </div>
+                    <h8>Date of return: <%= article.dateofreturn %></h8>
                     <div class="card-text mb-2"><%= article.description %></div>
                     <a href="articles/<%= article.slug %>" class="btn btn-primary">Read More</a>
                     <a href="articles/edit/<%= article.id %>" class="btn btn-info">Edit</a>
@@ -39,5 +38,20 @@
               </div>
         <% }) %>
     </div>
+    <script>
+        var a = document.querySelector('.status');
+        var colors = ["red","green","blue","pink", "gold", "yellow", "blueviolet"];
+        console.log(a)
+        if(a === "Accepted"){
+            a.style.color === colors[1];
+        } else if(a === "Takes"){
+            a.style.color === colors[1];
+        } else if(a === "Turned"){
+            a === colors[4]
+        } else {
+            a === colors[0]
+        }
+
+    </script>
 </body>
 </html>
